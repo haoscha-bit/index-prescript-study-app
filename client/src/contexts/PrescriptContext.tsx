@@ -37,6 +37,7 @@ interface PrescriptContextType extends PrescriptState {
   removePrescript: (id: string) => void;
   editPrescript: (id: string, updates: Partial<Omit<Prescript, "id" | "createdAt">>) => void;
   assignPrescript: () => Prescript | null;
+  startTimer: () => void;
   completeSession: () => void;
   failSession: () => void;
   clearActivePrescript: () => void;
@@ -169,11 +170,10 @@ export function PrescriptProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const endTime = Date.now() + selected.duration * 60 * 1000;
     setState((prev) => ({
       ...prev,
       activePrescript: selected,
-      timerEndTime: endTime,
+      timerEndTime: null, // Timer starts only when user clicks "Begin Compliance"
     }));
     return selected;
   }, [state.prescripts, state.activePrescript]);
@@ -242,6 +242,14 @@ export function PrescriptProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const startTimer = useCallback(() => {
+    setState((prev) => {
+      if (!prev.activePrescript) return prev;
+      const endTime = Date.now() + prev.activePrescript.duration * 60 * 1000;
+      return { ...prev, timerEndTime: endTime };
+    });
+  }, []);
+
   const clearActivePrescript = useCallback(() => {
     setState((prev) => ({
       ...prev,
@@ -264,6 +272,7 @@ export function PrescriptProvider({ children }: { children: ReactNode }) {
         removePrescript,
         editPrescript,
         assignPrescript,
+        startTimer,
         completeSession,
         failSession,
         clearActivePrescript,

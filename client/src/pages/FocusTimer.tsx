@@ -23,7 +23,8 @@ import { X, Check } from "lucide-react";
 const INDEX_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/index-logo_daddf937.png";
 
 export default function FocusTimer() {
-  const { activePrescript, timerEndTime, completeSession, failSession } = usePrescript();
+  const { activePrescript, timerEndTime, startTimer, completeSession, failSession } = usePrescript();
+  const timerStartedRef = useRef(false);
   const [, navigate] = useLocation();
   const [timeLeft, setTimeLeft] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -33,10 +34,16 @@ export default function FocusTimer() {
 
   // Redirect if no active prescript
   useEffect(() => {
-    if (!activePrescript || !timerEndTime) {
+    if (!activePrescript) {
       navigate("/receive");
+      return;
     }
-  }, [activePrescript, timerEndTime, navigate]);
+    // Start the timer exactly when the user lands on this page
+    if (!timerEndTime && !timerStartedRef.current) {
+      timerStartedRef.current = true;
+      startTimer();
+    }
+  }, [activePrescript, timerEndTime, startTimer, navigate]);
 
   // Timer logic
   useEffect(() => {
@@ -78,7 +85,15 @@ export default function FocusTimer() {
     }, 1500);
   }, [failSession, navigate]);
 
-  if (!activePrescript || !timerEndTime) return null;
+  if (!activePrescript) return null;
+  if (!timerEndTime) {
+    // Timer is being initialized, show loading state
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "oklch(0.08 0.015 250)" }}>
+        <p className="text-system text-[0.6rem] text-index-blue-dim tracking-[0.2em] animate-pulse">INITIALIZING SESSION...</p>
+      </div>
+    );
+  }
 
   const totalDuration = activePrescript.duration * 60 * 1000;
   const elapsed = totalDuration - timeLeft;
