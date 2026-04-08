@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { FilePlus, Timer, BarChart3, Archive, ChevronRight } from "lucide-react";
 
-const INDEX_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/index-logo_daddf937.png";
+const INDEX_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/The_Index_Logo_ddd3662b.webp";
 
 export default function Home() {
   const { prescripts, totalCompleted, streak, rank, getCompletionRate, activePrescript } = usePrescript();

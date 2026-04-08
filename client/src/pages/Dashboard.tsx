@@ -224,7 +224,7 @@ export default function Dashboard() {
                 const total = day.completed + day.failed;
                 const barWidth = total > 0 ? (total / maxDayActivity) * 100 : 0;
                 return (
-                  <div key={day.label} className="flex items-center gap-3">
+                  <div key={`${day.label}-${i}`} className="flex items-center gap-3">
                     <span className="text-[0.6rem] text-muted-foreground w-8 text-right" style={{ fontFamily: "var(--font-mono)" }}>
                       {day.label}
                     </span>

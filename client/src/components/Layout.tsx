@@ -1,6 +1,7 @@
 /**
  * Layout.tsx — The Index: Prescript System
  * Design: Dark with Index blue accents, clean and simple
+ * Easter egg: 1/2000 chance DONSCREAM plays on page navigation
  */
 import { useLocation, Link } from "wouter";
 import { usePrescript } from "@/contexts/PrescriptContext";
@@ -8,27 +9,46 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ScrollText,
   FilePlus,
-  Timer,
   BarChart3,
   Archive,
   ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 
-const INDEX_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/index-logo_daddf937.png";
+const INDEX_LOGO_GLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/The_Index_Logo_ddd3662b.webp";
+const BEEPER_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/the-prescript-beeper-code-v0-9tynecxzlqmg1-removebg-preview_9a426540.png";
+const DONSCREAM_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/DONSCREAM_5e4e23ec.mp3";
 
 const NAV_ITEMS = [
-  { path: "/", label: "Sanctum", icon: ScrollText, description: "Main Chamber" },
-  { path: "/create", label: "Inscribe", icon: FilePlus, description: "Create Prescripts" },
-  { path: "/receive", label: "Receive", icon: Timer, description: "Receive Prescript" },
-  { path: "/dashboard", label: "Registry", icon: BarChart3, description: "Compliance Record" },
-  { path: "/history", label: "Archives", icon: Archive, description: "Session Archives" },
+  { path: "/", label: "Sanctum", icon: "lucide" as const, lucideIcon: ScrollText, description: "Main Chamber" },
+  { path: "/create", label: "Inscribe", icon: "lucide" as const, lucideIcon: FilePlus, description: "Create Prescripts" },
+  { path: "/receive", label: "Receive", icon: "beeper" as const, lucideIcon: null, description: "Receive Prescript" },
+  { path: "/dashboard", label: "Registry", icon: "lucide" as const, lucideIcon: BarChart3, description: "Compliance Record" },
+  { path: "/history", label: "Archives", icon: "lucide" as const, lucideIcon: Archive, description: "Session Archives" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { rank, streak } = usePrescript();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const donscreamRef = useRef<HTMLAudioElement | null>(null);
+
+  const maybePlayDonscream = useCallback(() => {
+    const roll = Math.random();
+    if (roll < 1 / 2000) {
+      if (!donscreamRef.current) {
+        donscreamRef.current = new Audio(DONSCREAM_URL);
+        donscreamRef.current.volume = 0.8;
+      }
+      donscreamRef.current.currentTime = 0;
+      donscreamRef.current.play().catch(() => {});
+    }
+  }, []);
+
+  const handleNavClick = useCallback(() => {
+    setSidebarOpen(false);
+    maybePlayDonscream();
+  }, [maybePlayDonscream]);
 
   return (
     <div className="min-h-screen flex bg-background relative overflow-hidden">
@@ -39,7 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="flex items-center gap-2 text-index-blue"
           >
-            <img src={INDEX_LOGO} alt="The Index" className="w-5 h-5 object-contain" />
+            <img src={INDEX_LOGO_GLOW} alt="The Index" className="w-6 h-6 object-contain" />
             <span className="text-system text-[0.65rem]">The Index</span>
           </button>
           <div className="text-system text-[0.6rem] text-muted-foreground">
@@ -73,10 +93,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         `}
         style={{ backgroundColor: "oklch(0.10 0.012 250 / 0.97)" }}
       >
-        {/* Sidebar header with logo */}
+        {/* Sidebar header with glowing logo */}
         <div className="p-5 border-b border-index-blue/10">
           <div className="flex items-center gap-3">
-            <img src={INDEX_LOGO} alt="The Index" className="w-9 h-9 object-contain" />
+            <img
+              src={INDEX_LOGO_GLOW}
+              alt="The Index"
+              className="w-9 h-9 object-contain"
+              style={{ filter: "drop-shadow(0 0 8px oklch(0.68 0.16 240 / 0.3))" }}
+            />
             <div>
               <h1 className="text-display text-lg font-semibold text-index-blue blue-glow tracking-wide">
                 The Index
@@ -107,12 +132,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <nav className="p-3 flex-1">
           {NAV_ITEMS.map((item) => {
             const isActive = location === item.path;
-            const Icon = item.icon;
             return (
               <Link
                 key={item.path}
                 href={item.path}
-                onClick={() => setSidebarOpen(false)}
+                onClick={handleNavClick}
               >
                 <div
                   className={`
@@ -124,7 +148,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     }
                   `}
                 >
-                  <Icon size={16} className={isActive ? "text-index-blue" : "text-muted-foreground group-hover:text-index-blue-dim"} />
+                  {/* Icon: beeper image for Receive, lucide icons for others */}
+                  {item.icon === "beeper" ? (
+                    <img
+                      src={BEEPER_ICON}
+                      alt="Prescript Beeper"
+                      className={`w-4 h-4 object-contain ${isActive ? "opacity-100" : "opacity-60 group-hover:opacity-80"}`}
+                      style={isActive ? { filter: "drop-shadow(0 0 4px oklch(0.68 0.16 240 / 0.4))" } : undefined}
+                    />
+                  ) : (
+                    (() => {
+                      const Icon = item.lucideIcon!;
+                      return <Icon size={16} className={isActive ? "text-index-blue" : "text-muted-foreground group-hover:text-index-blue-dim"} />;
+                    })()
+                  )}
                   <div className="flex-1">
                     <div className="text-system text-[0.65rem]">{item.label}</div>
                     <div className="text-[0.55rem] text-muted-foreground font-normal" style={{ fontFamily: "var(--font-body)", textTransform: "none", letterSpacing: "normal" }}>
