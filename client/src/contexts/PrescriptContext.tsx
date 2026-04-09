@@ -7,6 +7,13 @@ export interface Prescript {
   name: string;
   duration: number; // minutes
   category: string | null;
+  deckId: number | null;
+  createdAt: Date;
+}
+
+export interface Deck {
+  id: number;
+  name: string;
   createdAt: Date;
 }
 
@@ -22,6 +29,7 @@ export interface SessionRecord {
 
 export interface PrescriptState {
   prescripts: Prescript[];
+  decks: Deck[];
   sessions: SessionRecord[];
   streak: number;
   totalCompleted: number;
@@ -30,6 +38,7 @@ export interface PrescriptState {
   activePrescript: Prescript | null;
   timerEndTime: number | null;
   rank: string;
+  selectedDeckId: number | null; // null = "All Prescripts"
 }
 
 interface PrescriptContextType extends PrescriptState {
@@ -41,6 +50,13 @@ interface PrescriptContextType extends PrescriptState {
   failSession: () => Promise<void>;
   clearActivePrescript: () => void;
   getCompletionRate: () => number;
+  // Deck operations
+  createDeck: (name: string) => Promise<void>;
+  renameDeck: (id: number, name: string) => Promise<void>;
+  deleteDeck: (id: number) => Promise<void>;
+  setSelectedDeckId: (deckId: number | null) => void;
+  updatePrescriptDeck: (prescriptId: number, deckId: number | null) => Promise<void>;
+  getPrescriptsForDeck: (deckId: number | null) => Prescript[];
 }
 
 const PrescriptContext = createContext<PrescriptContextType | null>(null);
@@ -48,6 +64,7 @@ const PrescriptContext = createContext<PrescriptContextType | null>(null);
 export function PrescriptProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PrescriptState>({
     prescripts: [],
+    decks: [],
     sessions: [],
     streak: 0,
     totalCompleted: 0,
@@ -56,22 +73,28 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
     activePrescript: null,
     timerEndTime: null,
     rank: "Uninitialized",
+    selectedDeckId: null,
   });
 
   // tRPC queries
   const prescriptsQuery = trpc.prescripts.list.useQuery();
+  const decksQuery = trpc.decks.list.useQuery();
   const sessionsQuery = trpc.sessions.list.useQuery();
   const createPrescriptMutation = trpc.prescripts.create.useMutation();
   const deletePrescriptMutation = trpc.prescripts.delete.useMutation();
   const recordSessionMutation = trpc.sessions.record.useMutation();
+  const createDeckMutation = trpc.decks.create.useMutation();
+  const renameDeckMutation = trpc.decks.rename.useMutation();
+  const deleteDeckMutation = trpc.decks.delete.useMutation();
+  const updatePrescriptDeckMutation = trpc.prescripts.updateDeck.useMutation();
 
   // Load data from database
   useEffect(() => {
     if (prescriptsQuery.data && sessionsQuery.data) {
       const prescripts = prescriptsQuery.data;
       const sessions = sessionsQuery.data;
+      const decks = decksQuery.data || [];
 
-      // Calculate stats
       const completed = sessions.filter((s) => s.status === "completed").length;
       const failed = sessions.filter((s) => s.status === "failed").length;
 
@@ -99,7 +122,6 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Calculate rank
       const getRank = (completed: number) => {
         if (completed === 0) return "Uninitialized";
         if (completed < 5) return "Proselyte";
@@ -112,6 +134,7 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
       setState((prev) => ({
         ...prev,
         prescripts,
+        decks,
         sessions,
         totalCompleted: completed,
         totalFailed: failed,
@@ -121,7 +144,7 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
         rank: getRank(completed),
       }));
     }
-  }, [prescriptsQuery.data, sessionsQuery.data]);
+  }, [prescriptsQuery.data, sessionsQuery.data, decksQuery.data]);
 
   // Restore active prescript from sessionStorage
   useEffect(() => {
@@ -136,11 +159,12 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const addPrescript = async (p: Omit<Prescript, "id" | "createdAt" | "userId" | "description" | "updatedAt">) => {
+  const addPrescript = async (p: Omit<Prescript, "id" | "createdAt">) => {
     await createPrescriptMutation.mutateAsync({
       name: p.name,
       duration: p.duration,
       category: p.category || undefined,
+      deckId: p.deckId,
     });
     prescriptsQuery.refetch();
   };
@@ -150,10 +174,19 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
     prescriptsQuery.refetch();
   };
 
+  const getPrescriptsForDeck = (deckId: number | null): Prescript[] => {
+    if (deckId === null) {
+      // "All Prescripts" — return everything
+      return state.prescripts;
+    }
+    return state.prescripts.filter((p) => p.deckId === deckId);
+  };
+
   const assignPrescript = () => {
-    if (state.prescripts.length === 0) return null;
-    const randomIndex = Math.floor(Math.random() * state.prescripts.length);
-    const selected = state.prescripts[randomIndex];
+    const pool = getPrescriptsForDeck(state.selectedDeckId);
+    if (pool.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    const selected = pool[randomIndex];
     setState((prev) => ({ ...prev, activePrescript: selected }));
     sessionStorage.setItem("activePrescript", JSON.stringify(selected));
     return selected;
@@ -192,9 +225,37 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
 
   const getCompletionRate = () => {
     if (state.sessions.length === 0) return 0;
-    return Math.round(
-      (state.totalCompleted / state.sessions.length) * 100
-    );
+    return Math.round((state.totalCompleted / state.sessions.length) * 100);
+  };
+
+  // Deck operations
+  const createDeck = async (name: string) => {
+    await createDeckMutation.mutateAsync({ name });
+    decksQuery.refetch();
+  };
+
+  const renameDeck = async (id: number, name: string) => {
+    await renameDeckMutation.mutateAsync({ id, name });
+    decksQuery.refetch();
+  };
+
+  const deleteDeck = async (id: number) => {
+    await deleteDeckMutation.mutateAsync({ id });
+    // If the deleted deck was selected, reset to "All"
+    if (state.selectedDeckId === id) {
+      setState((prev) => ({ ...prev, selectedDeckId: null }));
+    }
+    decksQuery.refetch();
+    prescriptsQuery.refetch(); // Prescripts may have been unassigned
+  };
+
+  const setSelectedDeckId = (deckId: number | null) => {
+    setState((prev) => ({ ...prev, selectedDeckId: deckId }));
+  };
+
+  const updatePrescriptDeck = async (prescriptId: number, deckId: number | null) => {
+    await updatePrescriptDeckMutation.mutateAsync({ id: prescriptId, deckId });
+    prescriptsQuery.refetch();
   };
 
   const value: PrescriptContextType = {
@@ -207,6 +268,12 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
     failSession,
     clearActivePrescript,
     getCompletionRate,
+    createDeck,
+    renameDeck,
+    deleteDeck,
+    setSelectedDeckId,
+    updatePrescriptDeck,
+    getPrescriptsForDeck,
   };
 
   return (

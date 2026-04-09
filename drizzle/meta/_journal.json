@@ -15,6 +15,13 @@
       "when": 1775729043508,
       "tag": "0001_natural_rhodey",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1775731596247,
+      "tag": "0002_eminent_sunspot",
+      "breakpoints": true
     }
   ]
 }

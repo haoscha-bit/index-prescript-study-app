@@ -2,6 +2,7 @@
  * ReceivePrescript.tsx — Receive a Prescript assignment
  * Design: Matches nyos.dev/prescript style.
  *   - Black background, Index logo centered at top
+ *   - Deck selector before receiving
  *   - "- Click to Receive -" prompt in pixel font
  *   - On click: scramble animation with PrescriptRandomizer.mp3
  *   - Then: text resolves left-to-right with PrescriptMessage.mp3 (looping)
@@ -13,7 +14,7 @@ import { useLocation } from "wouter";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ChevronRight, Clock, Tag, AlertTriangle, RefreshCw } from "lucide-react";
+import { ChevronRight, Clock, Tag, RefreshCw, Folder, ChevronDown } from "lucide-react";
 import { usePrescriptAudio } from "@/hooks/usePrescriptAudio";
 
 const INDEX_LOGO_GLOW = "/assets/The_Index_Logo.webp";
@@ -29,7 +30,15 @@ function randomChar(): string {
 }
 
 export default function ReceivePrescript() {
-  const { prescripts, assignPrescript, activePrescript } = usePrescript();
+  const {
+    prescripts,
+    decks,
+    assignPrescript,
+    activePrescript,
+    selectedDeckId,
+    setSelectedDeckId,
+    getPrescriptsForDeck,
+  } = usePrescript();
   const [, navigate] = useLocation();
   const { playRandomizer, stopRandomizer, playMessage, stopMessage, stopAll } = usePrescriptAudio();
 
@@ -46,6 +55,10 @@ export default function ReceivePrescript() {
   const scrambleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const revealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const phaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Pool count for the currently selected deck
+  const poolPrescripts = getPrescriptsForDeck(selectedDeckId);
+  const poolCount = poolPrescripts.length;
 
   // Cleanup on unmount
   useEffect(() => {
@@ -122,8 +135,12 @@ export default function ReceivePrescript() {
   }, [playRandomizer, stopRandomizer, playMessage, stopMessage]);
 
   const handleAssign = useCallback(() => {
-    if (prescripts.length === 0) {
-      toast.error("No Prescripts in the pool. Inscribe tasks first.");
+    if (poolCount === 0) {
+      toast.error(
+        selectedDeckId !== null
+          ? "No Prescripts in this deck. Assign tasks to this deck first."
+          : "No Prescripts in the pool. Inscribe tasks first."
+      );
       return;
     }
 
@@ -142,7 +159,7 @@ export default function ReceivePrescript() {
     } else {
       toast.error("Assignment failed. The system could not select a Prescript.");
     }
-  }, [prescripts, assignPrescript, runScrambleAndReveal]);
+  }, [poolCount, selectedDeckId, assignPrescript, runScrambleAndReveal]);
 
   const handleReroll = useCallback(() => {
     if (rerollsUsed >= MAX_REROLLS) {
@@ -171,13 +188,9 @@ export default function ReceivePrescript() {
     navigate("/focus");
   };
 
-  const difficultyColor = (d?: string) => {
-    switch (d) {
-      case "critical": return "text-seal-red-bright";
-      case "high": return "text-index-blue";
-      case "low": return "text-muted-foreground";
-      default: return "text-index-blue-dim";
-    }
+  const getSelectedDeckName = () => {
+    if (selectedDeckId === null) return "All Prescripts";
+    return decks.find((d) => d.id === selectedDeckId)?.name || "Unknown Deck";
   };
 
   return (
@@ -198,7 +211,7 @@ export default function ReceivePrescript() {
           />
         </motion.div>
 
-        {/* Idle state — Click to Receive */}
+        {/* Idle state — Deck selector + Click to Receive */}
         {phase === "idle" && !activePrescript && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -206,23 +219,63 @@ export default function ReceivePrescript() {
             exit={{ opacity: 0 }}
             className="text-center"
           >
+            {/* Deck Selector — only show if decks exist */}
+            {decks.length > 0 && (
+              <div className="mb-8">
+                <p className="text-system text-[0.5rem] text-muted-foreground/50 tracking-[0.2em] mb-2">
+                  SELECT DECK
+                </p>
+                <div className="relative inline-block">
+                  <select
+                    value={selectedDeckId ?? ""}
+                    onChange={(e) =>
+                      setSelectedDeckId(e.target.value ? parseInt(e.target.value) : null)
+                    }
+                    className="appearance-none bg-transparent border border-index-blue/20 text-index-blue-dim text-sm px-4 py-2 pr-8 cursor-pointer focus:outline-none focus:border-index-blue/50 transition-colors min-w-[180px] text-center"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    <option value="">All Prescripts</option>
+                    {decks.map((deck) => (
+                      <option key={deck.id} value={deck.id}>
+                        {deck.name} ({prescripts.filter((p) => p.deckId === deck.id).length})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={12}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-index-blue-dim pointer-events-none"
+                  />
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleAssign}
-              disabled={prescripts.length === 0}
+              disabled={poolCount === 0}
               className="text-pixel text-sm sm:text-base text-index-blue-bright tracking-wider hover:text-index-blue transition-colors duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               - Click to Receive -
             </button>
 
-            {prescripts.length === 0 && (
+            {poolCount === 0 && (
               <p className="text-[0.65rem] text-seal-red-bright mt-4 font-mono">
-                No Prescripts inscribed. Visit the Inscription Chamber first.
+                {selectedDeckId !== null
+                  ? "This deck has no Prescripts. Assign tasks to it first."
+                  : "No Prescripts inscribed. Visit the Inscription Chamber first."}
               </p>
             )}
 
-            {prescripts.length > 0 && (
+            {poolCount > 0 && (
               <p className="text-[0.55rem] text-muted-foreground/40 mt-4 font-mono tracking-wider">
-                {prescripts.length} TASK{prescripts.length !== 1 ? "S" : ""} IN POOL
+                {poolCount} TASK{poolCount !== 1 ? "S" : ""} IN{" "}
+                {selectedDeckId !== null ? (
+                  <span className="text-index-blue-dim">
+                    <Folder size={9} className="inline -mt-0.5 mr-0.5" />
+                    {getSelectedDeckName().toUpperCase()}
+                  </span>
+                ) : (
+                  "POOL"
+                )}
               </p>
             )}
           </motion.div>
@@ -265,11 +318,14 @@ export default function ReceivePrescript() {
                         <span>{assignedPrescript.category}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-index-blue">
-                        {assignedPrescript.duration} MIN
-                      </span>
-                    </div>
+                    {assignedPrescript.deckId && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Folder size={14} className="text-index-blue-dim" />
+                        <span>
+                          {decks.find((d) => d.id === assignedPrescript.deckId)?.name || "Deck"}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action buttons */}
@@ -282,7 +338,7 @@ export default function ReceivePrescript() {
                       <ChevronRight size={16} />
                     </button>
 
-                    {rerollsUsed < MAX_REROLLS && prescripts.length > 1 && (
+                    {rerollsUsed < MAX_REROLLS && poolCount > 1 && (
                       <button
                         onClick={handleReroll}
                         className="flex items-center gap-2 px-4 py-4 border border-border text-muted-foreground text-system text-[0.6rem] hover:border-index-blue/20 hover:text-index-blue-dim transition-all duration-200"

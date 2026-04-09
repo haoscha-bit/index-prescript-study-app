@@ -2,18 +2,11 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-or
 
 /**
  * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
  * Columns use camelCase to match both database fields and generated types.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Email for email/password authentication */
   email: varchar("email", { length: 320 }).notNull().unique(),
-  /** Hashed password for email/password authentication */
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   name: text("name"),
   loginMethod: varchar("loginMethod", { length: 64 }).default("email").notNull(),
@@ -21,12 +14,25 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-  // Legacy OAuth field (optional, for future OAuth integration)
   openId: varchar("openId", { length: 64 }).unique(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+/**
+ * Prescript Decks — user-created collections for organizing prescripts
+ */
+export const decks = mysqlTable("decks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Deck = typeof decks.$inferSelect;
+export type InsertDeck = typeof decks.$inferInsert;
 
 /**
  * Prescripts table for storing user study tasks
@@ -38,6 +44,7 @@ export const prescripts = mysqlTable("prescripts", {
   description: text("description"),
   duration: int("duration").notNull(), // in minutes
   category: varchar("category", { length: 128 }),
+  deckId: int("deckId"), // nullable — null means "unassigned" / belongs to all
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
