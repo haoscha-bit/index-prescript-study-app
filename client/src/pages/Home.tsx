@@ -82,7 +82,7 @@ export default function Home() {
                 <div className="text-system text-[0.5rem] text-muted-foreground mb-1.5">
                   {stat.label}
                 </div>
-                <div className={`text-display text-xl font-semibold ${stat.accent ? "text-index-blue" : "text-ink"}`}>
+                <div className={`text-display font-semibold ${stat.accent ? "text-index-blue text-sm sm:text-base" : "text-ink text-xl"}`}>
                   {stat.value}
                 </div>
               </motion.div>

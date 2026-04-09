@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { getRank } from "@shared/ranks";
 
 // Types
 export interface Prescript {
@@ -122,14 +123,7 @@ export function PrescriptProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const getRank = (completed: number) => {
-        if (completed === 0) return "Uninitialized";
-        if (completed < 5) return "Proselyte";
-        if (completed < 15) return "Proxy";
-        if (completed < 30) return "Messenger";
-        if (completed < 60) return "Weaver";
-        return "Arbiter";
-      };
+      // getRank imported from shared/ranks.ts
 
       setState((prev) => ({
         ...prev,

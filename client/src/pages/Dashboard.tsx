@@ -8,17 +8,7 @@ import { usePrescript } from "@/contexts/PrescriptContext";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Target, Flame, ScrollText, Award } from "lucide-react";
 import { useMemo } from "react";
-
-const RANKS = [
-  { threshold: 0, title: "Uninitiated", next: 5 },
-  { threshold: 5, title: "Proselyte", next: 15 },
-  { threshold: 15, title: "Blindfolded Proselyte", next: 30 },
-  { threshold: 30, title: "Proxy Aspirant", next: 50 },
-  { threshold: 50, title: "Proxy", next: 80 },
-  { threshold: 80, title: "Senior Proxy", next: 120 },
-  { threshold: 120, title: "Messenger", next: 200 },
-  { threshold: 200, title: "Weaver", next: null },
-];
+import { RANKS } from "@shared/ranks";
 
 export default function Dashboard() {
   const { totalCompleted, totalFailed, streak, rank, sessions, getCompletionRate, prescripts } = usePrescript();

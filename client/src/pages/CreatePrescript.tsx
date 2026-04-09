@@ -564,7 +564,7 @@ export default function CreatePrescript() {
                               <GripVertical size={14} className="text-index-blue" />
                             </button>
                             {movingPrescriptId === p.id && (
-                              <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-card border border-index-blue/20 shadow-lg">
+                              <div className="absolute right-0 bottom-full mb-1 z-50 min-w-[160px] bg-card border border-index-blue/20 shadow-lg max-h-[240px] overflow-y-auto">
                                 <div className="text-system text-[0.55rem] text-muted-foreground px-3 py-1.5 border-b border-index-blue/10 tracking-[0.1em]">
                                   MOVE TO DECK
                                 </div>

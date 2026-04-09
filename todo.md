@@ -51,3 +51,12 @@
 - [x] Add "All Prescripts" default option on Receive page
 - [x] Test full deck flow end-to-end
 - [x] Write vitest tests for deck procedures (8 tests passing)
+
+## Bug Fixes
+- [x] Fix deck dropdown overflow on Inscribe page — dropdown menu gets cut off for prescripts at bottom of page, making deck options unclickable
+
+## Rank System Overhaul
+- [x] Replace old rank system with 5-tier rank system with 3 subranks each
+- [x] Ranks: Proselyte, Sighted Proselyte, Proxy, Messenger, Weaver (each with I, II, III subranks)
+- [x] Rank thresholds: Proselyte I=0, II=50, III=100, Sighted Proselyte I=200, II=250, III=300, Proxy I=400, II=450, III=500, Messenger I=600, II=650, III=700, Weaver I=800, II=900, III=1000
+- [x] Update rank display across all pages (sidebar, home, dashboard)
