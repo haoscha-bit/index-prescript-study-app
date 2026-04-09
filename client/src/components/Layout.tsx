@@ -2,8 +2,10 @@
  * Layout.tsx — The Index: Prescript System
  * Design: Dark with Index blue accents, clean and simple
  * Easter egg: 1/2000 chance DONSCREAM plays on page navigation
+ * Sound: Dice.mp3 plays on nav menu switches
  */
 import { useLocation, Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { usePrescript } from "@/contexts/PrescriptContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,8 +14,10 @@ import {
   BarChart3,
   Archive,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
+import { playDice } from "@/hooks/useSoundEffects";
 
 const INDEX_LOGO_GLOW = "/assets/The_Index_Logo.webp";
 const BEEPER_ICON = "/assets/prescript-beeper.png";
@@ -30,6 +34,7 @@ const NAV_ITEMS = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { rank, streak } = usePrescript();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const donscreamRef = useRef<HTMLAudioElement | null>(null);
 
@@ -47,8 +52,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const handleNavClick = useCallback(() => {
     setSidebarOpen(false);
+    playDice();
     maybePlayDonscream();
   }, [maybePlayDonscream]);
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    window.location.href = "/login";
+  }, [logout]);
 
   return (
     <div className="min-h-screen flex bg-background relative overflow-hidden">
@@ -89,6 +100,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           border-r border-index-blue/10
           transition-transform duration-300 ease-in-out
           lg:translate-x-0 lg:static lg:z-auto
+          flex flex-col
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
         style={{ backgroundColor: "oklch(0.10 0.012 250 / 0.97)" }}
@@ -175,8 +187,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* Footer with logout */}
         <div className="p-4 border-t border-index-blue/10">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 mb-3 text-muted-foreground hover:text-seal-red-bright hover:bg-seal-red/10 border border-transparent hover:border-seal-red-bright/20 transition-all duration-200"
+          >
+            <LogOut size={13} />
+            <span className="text-system text-[0.6rem]">Log Out</span>
+          </button>
           <p className="text-[0.55rem] text-muted-foreground/50 text-center" style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.05em" }}>
             THE PRESCRIPT ALWAYS GUIDES
           </p>

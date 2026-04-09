@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ChevronRight, Clock, Tag, RefreshCw, Folder, ChevronDown } from "lucide-react";
 import { usePrescriptAudio } from "@/hooks/usePrescriptAudio";
+import { playMenuClick } from "@/hooks/useSoundEffects";
 
 const INDEX_LOGO_GLOW = "/assets/The_Index_Logo.webp";
 
@@ -331,7 +332,7 @@ export default function ReceivePrescript() {
                   {/* Action buttons */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button
-                      onClick={handleBeginSession}
+                      onClick={() => { playMenuClick(); handleBeginSession(); }}
                       className="flex items-center gap-3 px-8 py-4 bg-index-blue/10 border border-index-blue/40 text-index-blue text-system text-[0.7rem] tracking-[0.15em] hover:bg-index-blue/20 transition-all duration-300"
                     >
                       Begin Compliance
@@ -340,7 +341,7 @@ export default function ReceivePrescript() {
 
                     {rerollsUsed < MAX_REROLLS && poolCount > 1 && (
                       <button
-                        onClick={handleReroll}
+                        onClick={() => { playMenuClick(); handleReroll(); }}
                         className="flex items-center gap-2 px-4 py-4 border border-border text-muted-foreground text-system text-[0.6rem] hover:border-index-blue/20 hover:text-index-blue-dim transition-all duration-200"
                       >
                         <RefreshCw size={14} />

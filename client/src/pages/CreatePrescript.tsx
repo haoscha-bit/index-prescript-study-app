@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { playMenuClick } from "@/hooks/useSoundEffects";
 import {
   Plus,
   Trash2,
@@ -81,6 +82,7 @@ export default function CreatePrescript() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !duration) return;
+    playMenuClick();
 
     const dur = parseInt(duration);
     if (isNaN(dur) || dur <= 0 || dur > 480) {
@@ -136,6 +138,7 @@ export default function CreatePrescript() {
 
   const handleCreateDeck = async () => {
     if (!newDeckName.trim()) return;
+    playMenuClick();
     try {
       await createDeck(newDeckName.trim());
       toast.success(`Deck "${newDeckName.trim()}" has been created.`);
@@ -148,6 +151,7 @@ export default function CreatePrescript() {
 
   const handleRenameDeck = async () => {
     if (!renamingDeckId || !renameDeckName.trim()) return;
+    playMenuClick();
     try {
       await renameDeck(renamingDeckId, renameDeckName.trim());
       toast.success("Deck has been renamed.");
@@ -159,6 +163,7 @@ export default function CreatePrescript() {
   };
 
   const handleDeleteDeck = async (deckId: number, deckName: string) => {
+    playMenuClick();
     try {
       await deleteDeck(deckId);
       toast.success(`Deck "${deckName}" has been dissolved. Its prescripts are now unassigned.`);
@@ -169,6 +174,7 @@ export default function CreatePrescript() {
   };
 
   const handleMovePrescript = async (prescriptId: number, deckId: number | null) => {
+    playMenuClick();
     try {
       await updatePrescriptDeck(prescriptId, deckId);
       const deckName = deckId ? decks.find((d) => d.id === deckId)?.name : "Unassigned";

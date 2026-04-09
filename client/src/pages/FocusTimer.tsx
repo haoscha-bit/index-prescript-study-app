@@ -21,8 +21,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Check } from "lucide-react";
+import { useSoundEffects, playMenuClick } from "@/hooks/useSoundEffects";
 
 const INDEX_LOGO = "/assets/The_Index_Logo.webp";
+const MESSAGE_URL = "/assets/PrescriptMessage.mp3";
 
 // Scramble effect for _CleAr_ and _FaIL_ text
 const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -81,6 +83,7 @@ export default function FocusTimer() {
 
   const clearText = useScrambleText("_CleAr_", showResult === "clear", 600);
   const failText = useScrambleText("_FaIL_", showResult === "fail", 600);
+  const { playMessageLoop, stopMessage } = useSoundEffects();
 
   // Redirect if no active prescript
   useEffect(() => {
@@ -118,22 +121,27 @@ export default function FocusTimer() {
   }, [timerEndTime]);
 
   const handlePass = useCallback(() => {
+    playMenuClick();
     setShowResult("clear");
+    playMessageLoop();
     setTimeout(() => {
+      stopMessage();
       completeSession();
       toast.success("Prescript fulfilled. Compliance recorded.");
       navigate("/");
     }, 2000);
-  }, [completeSession, navigate]);
+  }, [completeSession, navigate, playMessageLoop, stopMessage]);
 
   const handleFail = useCallback(() => {
     setShowResult("fail");
+    playMessageLoop();
     setTimeout(() => {
+      stopMessage();
       failSession();
       toast.error("Deviation recorded. Streak compromised.");
       navigate("/");
     }, 2000);
-  }, [failSession, navigate]);
+  }, [failSession, navigate, playMessageLoop, stopMessage]);
 
   if (!activePrescript) return null;
   if (!timerEndTime) {
@@ -226,7 +234,7 @@ export default function FocusTimer() {
                 Continue Session
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleFail}
+                onClick={() => { playMenuClick(); handleFail(); }}
                 className="text-system text-[0.6rem] bg-seal-red/20 border border-seal-red-bright/30 text-seal-red-bright hover:bg-seal-red/30"
               >
                 Accept Failure

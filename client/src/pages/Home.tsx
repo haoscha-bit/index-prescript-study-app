@@ -8,7 +8,10 @@ import DocumentCard from "@/components/DocumentCard";
 import { usePrescript } from "@/contexts/PrescriptContext";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { FilePlus, Timer, BarChart3, Archive, ChevronRight } from "lucide-react";
+import { FilePlus, BarChart3, Archive, ChevronRight } from "lucide-react";
+import { playDice, playMenuClick } from "@/hooks/useSoundEffects";
+
+const BEEPER_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/the-prescript-beeper-code-v0-9tynecxzlqmg1-removebg-preview_9e06d390.png";
 
 const INDEX_LOGO = "/assets/The_Index_Logo.webp";
 
@@ -113,7 +116,7 @@ export default function Home() {
                     {activePrescript.duration} minutes — {activePrescript.category || "Uncategorized"}
                   </p>
                 </div>
-                <Link href="/focus">
+                <Link href="/focus" onClick={playMenuClick}>
                   <div className="flex items-center gap-2 px-4 py-2 bg-seal-red/20 border border-seal-red-bright/30 text-seal-red-bright text-system text-[0.65rem] hover:bg-seal-red/30 transition-colors">
                     Resume <ChevronRight size={14} />
                   </div>
@@ -150,7 +153,7 @@ export default function Home() {
               </DocumentCard>
             ) : (
               <>
-                <Link href="/receive">
+                <Link href="/receive" onClick={playDice}>
                   <DocumentCard
                     classification="ACTION"
                     priority="standard"
@@ -158,7 +161,7 @@ export default function Home() {
                   >
                     <div className="flex items-center gap-4 group cursor-pointer">
                       <div className="w-12 h-12 flex items-center justify-center border border-index-blue/20 bg-index-blue/5">
-                        <Timer size={22} className="text-index-blue" />
+                        <img src={BEEPER_ICON} alt="Prescript Beeper" className="w-6 h-6 object-contain" style={{ filter: "drop-shadow(0 0 4px oklch(0.68 0.16 240 / 0.3))" }} />
                       </div>
                       <div className="flex-1">
                         <p className="text-display text-lg font-semibold text-ink group-hover:text-index-blue transition-colors">
@@ -172,8 +175,7 @@ export default function Home() {
                     </div>
                   </DocumentCard>
                 </Link>
-
-                <Link href="/create">
+                <Link href="/create" onClick={playDice}>
                   <DocumentCard
                     classification="ACTION"
                     priority="standard"
@@ -196,7 +198,7 @@ export default function Home() {
                   </DocumentCard>
                 </Link>
 
-                <Link href="/dashboard">
+                <Link href="/dashboard" onClick={playDice}>
                   <DocumentCard
                     classification="ACTION"
                     priority="standard"
@@ -219,7 +221,7 @@ export default function Home() {
                   </DocumentCard>
                 </Link>
 
-                <Link href="/history">
+                <Link href="/history" onClick={playDice}>
                   <DocumentCard
                     classification="ACTION"
                     priority="standard"

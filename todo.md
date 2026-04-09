@@ -79,3 +79,10 @@
 - [x] Replace "Abandon" button with "Fail" button — shows Index logo with "_FaIL_" text in Press Start 2P font
 - [x] Pass records completion as normal, Fail records deviation as normal
 - [x] Match animation style from reference site (scramble text effect with Index logo)
+
+## Sound Effects & UI Updates (Batch)
+- [x] Play PrescriptMessage.mp3 during pass/fail animations until text fully generated
+- [x] Fix Receive Prescript icon on Home page to use beeper image (not clock/timer)
+- [x] Add Dice.mp3 sound for sidebar nav menu switches and home page nav buttons
+- [x] Add Menuclick.mp3 for action buttons (begin compliance, pass, fail, reroll, resume, inscribe, etc.)
+- [x] Add logout button that redirects to login page
