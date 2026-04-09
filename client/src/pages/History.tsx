@@ -129,7 +129,7 @@ export default function History() {
                               </span>
                             </span>
                             <span className="text-muted-foreground/40">
-                              {session.duration}min
+                              {session.duration ?? "?"}min
                             </span>
                           </div>
                           <div className="p-3 flex items-center gap-3">
@@ -146,11 +146,11 @@ export default function History() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-display text-sm font-medium text-ink truncate">
-                                {session.prescriptName}
+                                {session.prescriptName || "Unknown Prescript"}
                               </p>
                               <div className="flex items-center gap-3 mt-0.5">
                                 <span className="text-[0.6rem] text-muted-foreground flex items-center gap-1">
-                                  <Clock size={9} /> {session.duration} min
+                                  <Clock size={9} /> {session.duration ?? "?"} min
                                 </span>
                                 {session.category && (
                                   <span className="text-[0.6rem] text-index-blue-dim flex items-center gap-1">

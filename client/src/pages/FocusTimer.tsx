@@ -1,6 +1,8 @@
 /**
  * FocusTimer.tsx — Active Prescript Session
  * Design: Minimal, distraction-free countdown. Index blue accents. No background images.
+ * Pass/Fail: User can pass (premature completion) or fail (abandon) at any time.
+ * Animations: _CleAr_ and _FaIL_ in Press Start 2P font with Index logo, matching reference site.
  */
 import { usePrescript } from "@/contexts/PrescriptContext";
 import { useLocation } from "wouter";
@@ -18,9 +20,55 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { X, Check } from "lucide-react";
+import { Check } from "lucide-react";
 
 const INDEX_LOGO = "/assets/The_Index_Logo.webp";
+
+// Scramble effect for _CleAr_ and _FaIL_ text
+const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+
+function useScrambleText(finalText: string, active: boolean, duration: number = 800) {
+  const [display, setDisplay] = useState("");
+  const frameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!active) {
+      setDisplay("");
+      return;
+    }
+
+    const startTime = Date.now();
+    const chars = finalText.split("");
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
+
+      const result = chars.map((char, i) => {
+        if (char === "_" || char === " ") return char;
+        const charProgress = Math.min(1, progress * chars.length / (i + 1));
+        if (charProgress >= 1) return char;
+        return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+      });
+
+      setDisplay(result.join(""));
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate);
+      } else {
+        setDisplay(finalText);
+      }
+    };
+
+    frameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    };
+  }, [active, finalText, duration]);
+
+  return display;
+}
 
 export default function FocusTimer() {
   const { activePrescript, timerEndTime, startTimer, completeSession, failSession } = usePrescript();
@@ -28,9 +76,11 @@ export default function FocusTimer() {
   const [, navigate] = useLocation();
   const [timeLeft, setTimeLeft] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
-  const [showCompletionSeal, setShowCompletionSeal] = useState(false);
-  const [showFailure, setShowFailure] = useState(false);
+  const [showResult, setShowResult] = useState<"clear" | "fail" | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearText = useScrambleText("_CleAr_", showResult === "clear", 600);
+  const failText = useScrambleText("_FaIL_", showResult === "fail", 600);
 
   // Redirect if no active prescript
   useEffect(() => {
@@ -67,22 +117,22 @@ export default function FocusTimer() {
     };
   }, [timerEndTime]);
 
-  const handleComplete = useCallback(() => {
-    setShowCompletionSeal(true);
+  const handlePass = useCallback(() => {
+    setShowResult("clear");
     setTimeout(() => {
       completeSession();
       toast.success("Prescript fulfilled. Compliance recorded.");
       navigate("/");
-    }, 1500);
+    }, 2000);
   }, [completeSession, navigate]);
 
   const handleFail = useCallback(() => {
-    setShowFailure(true);
+    setShowResult("fail");
     setTimeout(() => {
       failSession();
       toast.error("Deviation recorded. Streak compromised.");
       navigate("/");
-    }, 1500);
+    }, 2000);
   }, [failSession, navigate]);
 
   if (!activePrescript) return null;
@@ -107,65 +157,41 @@ export default function FocusTimer() {
       className="min-h-screen flex flex-col relative overflow-hidden"
       style={{ backgroundColor: "oklch(0.08 0.015 250)" }}
     >
-      {/* Completion overlay */}
+      {/* Result overlay — _CleAr_ or _FaIL_ */}
       <AnimatePresence>
-        {showCompletionSeal && (
+        {showResult && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+            style={{ backgroundColor: "oklch(0.06 0.01 250)" }}
           >
-            <motion.div
-              initial={{ scale: 3, opacity: 0, rotate: -15 }}
-              animate={{ scale: 1, opacity: 1, rotate: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="text-center"
-            >
-              <img
-                src={INDEX_LOGO}
-                alt="Seal of Compliance"
-                className="w-32 h-32 mx-auto mb-6"
-                style={{ filter: "drop-shadow(0 0 30px oklch(0.68 0.16 240 / 0.5))" }}
-              />
-              <p className="text-system text-[0.8rem] text-index-blue tracking-[0.3em] blue-glow">
-                PRESCRIPT FULFILLED
-              </p>
-              <p className="text-display text-lg text-ink mt-2">
-                Compliance has been recorded.
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Index Logo */}
+            <motion.img
+              src={INDEX_LOGO}
+              alt="The Index"
+              className="w-28 h-28 sm:w-36 sm:h-36 object-contain mb-10"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              style={{ filter: "drop-shadow(0 0 30px oklch(0.68 0.16 240 / 0.5))" }}
+            />
 
-      {/* Failure overlay */}
-      <AnimatePresence>
-        {showFailure && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            style={{ backgroundColor: "oklch(0.12 0.05 25 / 0.95)" }}
-          >
-            <motion.div
+            {/* Scramble text */}
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="text-center"
+              transition={{ delay: 0.2 }}
+              className="text-index-blue blue-glow text-center"
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: "clamp(1.2rem, 4vw, 2rem)",
+                letterSpacing: "0.1em",
+                textShadow: "0 0 20px oklch(0.68 0.16 240 / 0.4)",
+              }}
             >
-              <motion.div
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 0.5, repeat: 2 }}
-              >
-                <X size={64} className="mx-auto mb-6 text-seal-red-bright" />
-              </motion.div>
-              <p className="text-system text-[0.8rem] text-seal-red-bright tracking-[0.3em]">
-                DEVIATION RECORDED
-              </p>
-              <p className="text-display text-lg text-ink mt-2">
-                The Prescript was not fulfilled.
-              </p>
-            </motion.div>
+              {showResult === "clear" ? clearText : failText}
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -175,20 +201,23 @@ export default function FocusTimer() {
         <div className="text-system text-[0.55rem] text-index-blue-dim tracking-[0.2em]">
           ACTIVE SESSION // {activePrescript.category?.toUpperCase() || "UNCATEGORIZED"}
         </div>
+
+        {/* Fail button (replaces old Abandon) */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <button className="text-system text-[0.6rem] text-muted-foreground hover:text-seal-red-bright transition-colors flex items-center gap-1.5">
-              <X size={14} />
-              Abandon
+            <button className="text-system text-[0.6rem] text-muted-foreground hover:text-seal-red-bright transition-colors flex items-center gap-1.5"
+              style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "0.55rem" }}
+            >
+              Fail
             </button>
           </AlertDialogTrigger>
           <AlertDialogContent className="bg-card border-seal-red-bright/30 max-w-md">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-display text-xl text-ink">
-                Confirm Deviation
+                Confirm Failure
               </AlertDialogTitle>
               <AlertDialogDescription className="text-sm text-muted-foreground">
-                Abandoning an active Prescript will be recorded as a failure.
+                Failing this Prescript will be recorded as a deviation.
                 Your streak will be compromised. This action is irreversible.
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -200,7 +229,7 @@ export default function FocusTimer() {
                 onClick={handleFail}
                 className="text-system text-[0.6rem] bg-seal-red/20 border border-seal-red-bright/30 text-seal-red-bright hover:bg-seal-red/30"
               >
-                Accept Deviation
+                Accept Failure
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -277,19 +306,38 @@ export default function FocusTimer() {
             </div>
           </div>
 
-          {/* Complete button (only when timer is done) */}
-          {isComplete && (
+          {/* Action buttons */}
+          <div className="flex items-center justify-center gap-4 sm:gap-6">
+            {/* Pass button — always available */}
             <motion.button
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              onClick={handleComplete}
-              className="inline-flex items-center gap-3 px-10 py-4 bg-index-blue/10 border border-index-blue/40 text-index-blue text-system text-[0.75rem] tracking-[0.2em] hover:bg-index-blue/20 transition-all duration-300 animate-pulse-blue"
+              onClick={handlePass}
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-index-blue/10 border border-index-blue/40 text-index-blue hover:bg-index-blue/20 transition-all duration-300"
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: "clamp(0.5rem, 1.5vw, 0.7rem)",
+                letterSpacing: "0.1em",
+              }}
             >
-              <Check size={18} />
-              Seal Compliance
+              Pass
             </motion.button>
-          )}
+
+            {/* Seal Compliance — only when timer is done */}
+            {isComplete && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                onClick={handlePass}
+                className="inline-flex items-center gap-3 px-6 sm:px-10 py-3 sm:py-4 bg-index-blue/10 border border-index-blue/40 text-index-blue text-system text-[0.75rem] tracking-[0.2em] hover:bg-index-blue/20 transition-all duration-300 animate-pulse-blue"
+              >
+                <Check size={18} />
+                Seal Compliance
+              </motion.button>
+            )}
+          </div>
         </motion.div>
       </div>
 

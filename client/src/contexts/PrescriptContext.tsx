@@ -21,9 +21,9 @@ export interface Deck {
 export interface SessionRecord {
   id: number;
   prescriptId: number;
-  prescriptName?: string;
-  category?: string;
-  duration?: number;
+  prescriptName: string | null;
+  category: string | null;
+  duration: number | null;
   status: "completed" | "failed";
   completedAt: Date;
 }

@@ -10,6 +10,10 @@ import { TrendingUp, TrendingDown, Target, Flame, ScrollText, Award } from "luci
 import { useMemo } from "react";
 import { RANKS } from "@shared/ranks";
 
+function formatNumber(n: number): string {
+  return n.toLocaleString();
+}
+
 export default function Dashboard() {
   const { totalCompleted, totalFailed, streak, rank, sessions, getCompletionRate, prescripts } = usePrescript();
 
@@ -96,16 +100,17 @@ export default function Dashboard() {
           {[
             {
               label: "Prescripts Fulfilled",
-              value: totalCompleted.toString(),
+              value: formatNumber(totalCompleted),
               icon: ScrollText,
-              sub: `${totalFailed} deviation${totalFailed !== 1 ? "s" : ""}`,
+              sub: `${formatNumber(totalFailed)} deviation${totalFailed !== 1 ? "s" : ""}`,
+
               color: "text-index-blue",
             },
             {
               label: "Compliance Rate",
               value: `${getCompletionRate()}%`,
               icon: Target,
-              sub: `${totalCompleted + totalFailed} total sessions`,
+              sub: `${formatNumber(totalCompleted + totalFailed)} total sessions`,
               color: getCompletionRate() >= 80 ? "text-index-blue" : getCompletionRate() >= 50 ? "text-index-blue-dim" : "text-seal-red-bright",
             },
             {
@@ -119,7 +124,7 @@ export default function Dashboard() {
               label: "Total Study Time",
               value: hours > 0 ? `${hours}h ${mins}m` : `${mins}m`,
               icon: TrendingUp,
-              sub: `across ${totalCompleted} sessions`,
+              sub: `across ${formatNumber(totalCompleted)} sessions`,
               color: "text-index-cyan",
             },
           ].map((stat, i) => {
@@ -161,8 +166,8 @@ export default function Dashboard() {
                 <p className="text-display text-xl font-semibold text-index-blue">{rank}</p>
                 <p className="text-[0.65rem] text-muted-foreground">
                   {currentRankInfo.next
-                    ? `${currentRankInfo.next - totalCompleted} more to next rank`
-                    : "Maximum rank achieved"}
+                    ? `${formatNumber(totalCompleted)} / ${formatNumber(currentRankInfo.next)} — ${formatNumber(currentRankInfo.next - totalCompleted)} more to next rank`
+                    : `${formatNumber(totalCompleted)} completed — Maximum rank achieved`}
                 </p>
               </div>
             </div>
@@ -179,7 +184,7 @@ export default function Dashboard() {
               </div>
               <div className="flex justify-between mt-1.5">
                 <span className="text-[0.5rem] text-muted-foreground/50" style={{ fontFamily: "var(--font-mono)" }}>
-                  {currentRankInfo.threshold}
+                  {formatNumber(currentRankInfo.threshold)}
                 </span>
                 <span className="text-[0.5rem] text-index-blue-dim" style={{ fontFamily: "var(--font-mono)" }}>
                   {rankProgress}%

@@ -181,5 +181,19 @@ export async function recordSession(userId: number, prescriptId: number, status:
 export async function getUserSessions(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(sessions).where(eq(sessions.userId, userId));
+  const result = await db
+    .select({
+      id: sessions.id,
+      userId: sessions.userId,
+      prescriptId: sessions.prescriptId,
+      status: sessions.status,
+      completedAt: sessions.completedAt,
+      prescriptName: prescripts.name,
+      duration: prescripts.duration,
+      category: prescripts.category,
+    })
+    .from(sessions)
+    .leftJoin(prescripts, eq(sessions.prescriptId, prescripts.id))
+    .where(eq(sessions.userId, userId));
+  return result;
 }

@@ -79,6 +79,17 @@ describe("Rank System", () => {
     expect(getRank(9999)).toBe("Weaver III");
   });
 
+  it("returns Weaver III for 100000 completions", () => {
+    expect(getRank(100000)).toBe("Weaver III");
+  });
+
+  it("getRankInfo returns Weaver III with next=null for 100000 completions", () => {
+    const info = getRankInfo(100000);
+    expect(info.title).toBe("Weaver III");
+    expect(info.threshold).toBe(1000);
+    expect(info.next).toBeNull();
+  });
+
   it("has 15 ranks in RANKS array", () => {
     expect(RANKS.length).toBe(15);
   });

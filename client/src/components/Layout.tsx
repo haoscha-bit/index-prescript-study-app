@@ -62,7 +62,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <img src={INDEX_LOGO_GLOW} alt="The Index" className="w-6 h-6 object-contain" />
             <span className="text-system text-[0.65rem]">The Index</span>
           </button>
-          <div className="text-system text-[0.6rem] text-muted-foreground">
+          <div className="text-system text-[0.6rem] text-muted-foreground truncate max-w-[140px]">
             {rank}
           </div>
         </div>

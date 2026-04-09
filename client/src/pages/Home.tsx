@@ -12,6 +12,10 @@ import { FilePlus, Timer, BarChart3, Archive, ChevronRight } from "lucide-react"
 
 const INDEX_LOGO = "/assets/The_Index_Logo.webp";
 
+function formatNumber(n: number): string {
+  return n.toLocaleString();
+}
+
 export default function Home() {
   // The userAuth hooks provides authentication state
   // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
@@ -67,7 +71,7 @@ export default function Home() {
           {/* Status overview */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
             {[
-              { label: "Prescripts Fulfilled", value: totalCompleted.toString(), accent: false },
+              { label: "Prescripts Fulfilled", value: formatNumber(totalCompleted), accent: false },
               { label: "Consecutive Compliance", value: `${streak} days`, accent: false },
               { label: "Compliance Rate", value: `${getCompletionRate()}%`, accent: false },
               { label: "Current Rank", value: rank, accent: true },

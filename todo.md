@@ -60,3 +60,22 @@
 - [x] Ranks: Proselyte, Sighted Proselyte, Proxy, Messenger, Weaver (each with I, II, III subranks)
 - [x] Rank thresholds: Proselyte I=0, II=50, III=100, Sighted Proselyte I=200, II=250, III=300, Proxy I=400, II=450, III=500, Messenger I=600, II=650, III=700, Weaver I=800, II=900, III=1000
 - [x] Update rank display across all pages (sidebar, home, dashboard)
+
+## Dashboard Rank Progress Indicator
+- [x] Enhance rank progression section with detailed visual progress bar showing current rank, next rank, prescripts completed vs needed, and percentage
+
+## Archive Display Bug Fix
+- [x] Fix archive/history page to show prescript name (task name) for completed and deviated sessions
+- [x] Fix archive/history page to show prescript duration for each session
+- [x] Fix archive/history page to show prescript category for each session
+
+## High Number Robustness (up to 100,000)
+- [x] Ensure rank system handles 100,000+ prescripts without visual errors (Weaver III stays stable)
+- [x] Ensure prescripts fulfilled count displays correctly for numbers up to 100,000 (toLocaleString formatting)
+- [x] Ensure compliance rate calculation works correctly for very high numbers of completions and deviations
+
+## Timer Pass/Fail Feature
+- [x] Add "Pass" button to timer (premature completion) — shows Index logo with "_CleAr_" text in Press Start 2P font
+- [x] Replace "Abandon" button with "Fail" button — shows Index logo with "_FaIL_" text in Press Start 2P font
+- [x] Pass records completion as normal, Fail records deviation as normal
+- [x] Match animation style from reference site (scramble text effect with Index logo)
