@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { X, Check } from "lucide-react";
 
-const INDEX_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/The_Index_Logo_ddd3662b.webp";
+const INDEX_LOGO = "/assets/The_Index_Logo.webp";
 
 export default function FocusTimer() {
   const { activePrescript, timerEndTime, startTimer, completeSession, failSession } = usePrescript();

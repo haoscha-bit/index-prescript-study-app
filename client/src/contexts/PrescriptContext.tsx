@@ -1,23 +1,23 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { trpc } from "@/lib/trpc";
 
 // Types
 export interface Prescript {
-  id: string;
+  id: number;
   name: string;
   duration: number; // minutes
-  category?: string;
-  difficulty?: "low" | "standard" | "high" | "critical";
-  createdAt: string;
+  category: string | null;
+  createdAt: Date;
 }
 
 export interface SessionRecord {
-  id: string;
-  prescriptId: string;
-  prescriptName: string;
+  id: number;
+  prescriptId: number;
+  prescriptName?: string;
   category?: string;
-  duration: number;
+  duration?: number;
   status: "completed" | "failed";
-  timestamp: string;
+  completedAt: Date;
 }
 
 export interface PrescriptState {
@@ -26,67 +26,27 @@ export interface PrescriptState {
   streak: number;
   totalCompleted: number;
   totalFailed: number;
-  lastCompletedDate: string | null;
+  lastCompletedDate: Date | null;
   activePrescript: Prescript | null;
   timerEndTime: number | null;
   rank: string;
 }
 
 interface PrescriptContextType extends PrescriptState {
-  addPrescript: (p: Omit<Prescript, "id" | "createdAt">) => void;
-  removePrescript: (id: string) => void;
-  editPrescript: (id: string, updates: Partial<Omit<Prescript, "id" | "createdAt">>) => void;
+  addPrescript: (p: Omit<Prescript, "id" | "createdAt">) => Promise<void>;
+  removePrescript: (id: number) => Promise<void>;
   assignPrescript: () => Prescript | null;
   startTimer: () => void;
-  completeSession: () => void;
-  failSession: () => void;
+  completeSession: () => Promise<void>;
+  failSession: () => Promise<void>;
   clearActivePrescript: () => void;
   getCompletionRate: () => number;
 }
 
 const PrescriptContext = createContext<PrescriptContextType | null>(null);
 
-const STORAGE_KEY = "index-prescript-data";
-
-const RANKS = [
-  { threshold: 0, title: "Uninitiated" },
-  { threshold: 5, title: "Proselyte" },
-  { threshold: 15, title: "Blindfolded Proselyte" },
-  { threshold: 30, title: "Proxy Aspirant" },
-  { threshold: 50, title: "Proxy" },
-  { threshold: 80, title: "Senior Proxy" },
-  { threshold: 120, title: "Messenger" },
-  { threshold: 200, title: "Weaver" },
-];
-
-function getRank(completed: number): string {
-  let rank = RANKS[0].title;
-  for (const r of RANKS) {
-    if (completed >= r.threshold) rank = r.title;
-  }
-  return rank;
-}
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function loadState(): PrescriptState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        ...parsed,
-        activePrescript: parsed.activePrescript || null,
-        timerEndTime: parsed.timerEndTime || null,
-        rank: getRank(parsed.totalCompleted || 0),
-      };
-    }
-  } catch {
-    // ignore
-  }
-  return {
+export function PrescriptProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<PrescriptState>({
     prescripts: [],
     sessions: [],
     streak: 0,
@@ -95,197 +55,169 @@ function loadState(): PrescriptState {
     lastCompletedDate: null,
     activePrescript: null,
     timerEndTime: null,
-    rank: "Uninitiated",
-  };
-}
+    rank: "Uninitialized",
+  });
 
-function saveState(state: PrescriptState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // ignore
-  }
-}
+  // tRPC queries
+  const prescriptsQuery = trpc.prescripts.list.useQuery();
+  const sessionsQuery = trpc.sessions.list.useQuery();
+  const createPrescriptMutation = trpc.prescripts.create.useMutation();
+  const deletePrescriptMutation = trpc.prescripts.delete.useMutation();
+  const recordSessionMutation = trpc.sessions.record.useMutation();
 
-export function PrescriptProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PrescriptState>(loadState);
-
+  // Load data from database
   useEffect(() => {
-    saveState(state);
-  }, [state]);
+    if (prescriptsQuery.data && sessionsQuery.data) {
+      const prescripts = prescriptsQuery.data;
+      const sessions = sessionsQuery.data;
 
-  const addPrescript = useCallback((p: Omit<Prescript, "id" | "createdAt">) => {
-    setState((prev) => ({
-      ...prev,
-      prescripts: [
-        ...prev.prescripts,
-        { ...p, id: generateId(), createdAt: new Date().toISOString() },
-      ],
-    }));
-  }, []);
+      // Calculate stats
+      const completed = sessions.filter((s) => s.status === "completed").length;
+      const failed = sessions.filter((s) => s.status === "failed").length;
 
-  const removePrescript = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      prescripts: prev.prescripts.filter((p) => p.id !== id),
-    }));
-  }, []);
+      // Calculate streak
+      const sortedSessions = [...sessions].sort(
+        (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+      );
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-  const editPrescript = useCallback((id: string, updates: Partial<Omit<Prescript, "id" | "createdAt">>) => {
-    setState((prev) => ({
-      ...prev,
-      prescripts: prev.prescripts.map((p) =>
-        p.id === id ? { ...p, ...updates } : p
-      ),
-    }));
-  }, []);
+      for (const session of sortedSessions) {
+        const sessionDate = new Date(session.completedAt);
+        sessionDate.setHours(0, 0, 0, 0);
+        const expectedDate = new Date(today);
+        expectedDate.setDate(expectedDate.getDate() - streak);
 
-  const assignPrescript = useCallback((): Prescript | null => {
-    let pool = state.prescripts;
-    if (pool.length === 0) return null;
-
-    // Prevent immediate repetition
-    if (pool.length > 1 && state.activePrescript) {
-      pool = pool.filter((p) => p.id !== state.activePrescript!.id);
-    }
-
-    // Weighted randomness by difficulty
-    const weights = pool.map((p) => {
-      switch (p.difficulty) {
-        case "critical": return 4;
-        case "high": return 3;
-        case "standard": return 2;
-        case "low": return 1;
-        default: return 2;
+        if (
+          session.status === "completed" &&
+          sessionDate.getTime() === expectedDate.getTime()
+        ) {
+          streak++;
+        } else {
+          break;
+        }
       }
+
+      // Calculate rank
+      const getRank = (completed: number) => {
+        if (completed === 0) return "Uninitialized";
+        if (completed < 5) return "Proselyte";
+        if (completed < 15) return "Proxy";
+        if (completed < 30) return "Messenger";
+        if (completed < 60) return "Weaver";
+        return "Arbiter";
+      };
+
+      setState((prev) => ({
+        ...prev,
+        prescripts,
+        sessions,
+        totalCompleted: completed,
+        totalFailed: failed,
+        lastCompletedDate:
+          sortedSessions.find((s) => s.status === "completed")?.completedAt || null,
+        streak,
+        rank: getRank(completed),
+      }));
+    }
+  }, [prescriptsQuery.data, sessionsQuery.data]);
+
+  // Restore active prescript from sessionStorage
+  useEffect(() => {
+    const stored = sessionStorage.getItem("activePrescript");
+    if (stored) {
+      try {
+        const active = JSON.parse(stored);
+        setState((prev) => ({ ...prev, activePrescript: active }));
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, []);
+
+  const addPrescript = async (p: Omit<Prescript, "id" | "createdAt" | "userId" | "description" | "updatedAt">) => {
+    await createPrescriptMutation.mutateAsync({
+      name: p.name,
+      duration: p.duration,
+      category: p.category || undefined,
     });
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
-    let random = Math.random() * totalWeight;
-    let selected = pool[0];
-    for (let i = 0; i < pool.length; i++) {
-      random -= weights[i];
-      if (random <= 0) {
-        selected = pool[i];
-        break;
-      }
-    }
+    prescriptsQuery.refetch();
+  };
 
-    setState((prev) => ({
-      ...prev,
-      activePrescript: selected,
-      timerEndTime: null, // Timer starts only when user clicks "Begin Compliance"
-    }));
+  const removePrescript = async (id: number) => {
+    await deletePrescriptMutation.mutateAsync({ id });
+    prescriptsQuery.refetch();
+  };
+
+  const assignPrescript = () => {
+    if (state.prescripts.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * state.prescripts.length);
+    const selected = state.prescripts[randomIndex];
+    setState((prev) => ({ ...prev, activePrescript: selected }));
+    sessionStorage.setItem("activePrescript", JSON.stringify(selected));
     return selected;
-  }, [state.prescripts, state.activePrescript]);
+  };
 
-  const completeSession = useCallback(() => {
-    setState((prev) => {
-      if (!prev.activePrescript) return prev;
-      const today = new Date().toISOString().split("T")[0];
-      const lastDate = prev.lastCompletedDate;
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-      let newStreak = prev.streak;
-      if (lastDate === today) {
-        // Same day, keep streak
-      } else if (lastDate === yesterday) {
-        newStreak += 1;
-      } else {
-        newStreak = 1;
-      }
-      const newCompleted = prev.totalCompleted + 1;
-      return {
-        ...prev,
-        sessions: [
-          {
-            id: generateId(),
-            prescriptId: prev.activePrescript.id,
-            prescriptName: prev.activePrescript.name,
-            category: prev.activePrescript.category,
-            duration: prev.activePrescript.duration,
-            status: "completed" as const,
-            timestamp: new Date().toISOString(),
-          },
-          ...prev.sessions,
-        ],
-        streak: newStreak,
-        totalCompleted: newCompleted,
-        lastCompletedDate: today,
-        activePrescript: null,
-        timerEndTime: null,
-        rank: getRank(newCompleted),
-      };
+  const startTimer = () => {
+    if (!state.activePrescript) return;
+    const endTime = Date.now() + state.activePrescript.duration * 60 * 1000;
+    setState((prev) => ({ ...prev, timerEndTime: endTime }));
+  };
+
+  const completeSession = async () => {
+    if (!state.activePrescript) return;
+    await recordSessionMutation.mutateAsync({
+      prescriptId: state.activePrescript.id,
+      status: "completed",
     });
-  }, []);
+    sessionsQuery.refetch();
+    clearActivePrescript();
+  };
 
-  const failSession = useCallback(() => {
-    setState((prev) => {
-      if (!prev.activePrescript) return prev;
-      return {
-        ...prev,
-        sessions: [
-          {
-            id: generateId(),
-            prescriptId: prev.activePrescript.id,
-            prescriptName: prev.activePrescript.name,
-            category: prev.activePrescript.category,
-            duration: prev.activePrescript.duration,
-            status: "failed" as const,
-            timestamp: new Date().toISOString(),
-          },
-          ...prev.sessions,
-        ],
-        streak: Math.max(0, prev.streak - 1),
-        totalFailed: prev.totalFailed + 1,
-        activePrescript: null,
-        timerEndTime: null,
-      };
+  const failSession = async () => {
+    if (!state.activePrescript) return;
+    await recordSessionMutation.mutateAsync({
+      prescriptId: state.activePrescript.id,
+      status: "failed",
     });
-  }, []);
+    sessionsQuery.refetch();
+    clearActivePrescript();
+  };
 
-  const startTimer = useCallback(() => {
-    setState((prev) => {
-      if (!prev.activePrescript) return prev;
-      const endTime = Date.now() + prev.activePrescript.duration * 60 * 1000;
-      return { ...prev, timerEndTime: endTime };
-    });
-  }, []);
+  const clearActivePrescript = () => {
+    setState((prev) => ({ ...prev, activePrescript: null, timerEndTime: null }));
+    sessionStorage.removeItem("activePrescript");
+  };
 
-  const clearActivePrescript = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      activePrescript: null,
-      timerEndTime: null,
-    }));
-  }, []);
+  const getCompletionRate = () => {
+    if (state.sessions.length === 0) return 0;
+    return Math.round(
+      (state.totalCompleted / state.sessions.length) * 100
+    );
+  };
 
-  const getCompletionRate = useCallback((): number => {
-    const total = state.totalCompleted + state.totalFailed;
-    if (total === 0) return 0;
-    return Math.round((state.totalCompleted / total) * 100);
-  }, [state.totalCompleted, state.totalFailed]);
+  const value: PrescriptContextType = {
+    ...state,
+    addPrescript,
+    removePrescript,
+    assignPrescript,
+    startTimer,
+    completeSession,
+    failSession,
+    clearActivePrescript,
+    getCompletionRate,
+  };
 
   return (
-    <PrescriptContext.Provider
-      value={{
-        ...state,
-        addPrescript,
-        removePrescript,
-        editPrescript,
-        assignPrescript,
-        startTimer,
-        completeSession,
-        failSession,
-        clearActivePrescript,
-        getCompletionRate,
-      }}
-    >
-      {children}
-    </PrescriptContext.Provider>
+    <PrescriptContext.Provider value={value}>{children}</PrescriptContext.Provider>
   );
 }
 
 export function usePrescript() {
-  const ctx = useContext(PrescriptContext);
-  if (!ctx) throw new Error("usePrescript must be used within PrescriptProvider");
-  return ctx;
+  const context = useContext(PrescriptContext);
+  if (!context) {
+    throw new Error("usePrescript must be used within PrescriptProvider");
+  }
+  return context;
 }

@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 
-const INDEX_LOGO_GLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/The_Index_Logo_ddd3662b.webp";
-const BEEPER_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/the-prescript-beeper-code-v0-9tynecxzlqmg1-removebg-preview_9a426540.png";
-const DONSCREAM_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/DONSCREAM_5e4e23ec.mp3";
+const INDEX_LOGO_GLOW = "/assets/The_Index_Logo.webp";
+const BEEPER_ICON = "/assets/prescript-beeper.png";
+const DONSCREAM_URL = "/assets/DONSCREAM.mp3";
 
 const NAV_ITEMS = [
   { path: "/", label: "Sanctum", icon: "lucide" as const, lucideIcon: ScrollText, description: "Main Chamber" },

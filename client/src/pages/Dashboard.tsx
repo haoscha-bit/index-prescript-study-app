@@ -59,7 +59,10 @@ export default function Dashboard() {
       const date = new Date(Date.now() - i * 86400000);
       const dateStr = date.toISOString().split("T")[0];
       const dayLabel = date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
-      const daySessions = sessions.filter((s) => s.timestamp.startsWith(dateStr));
+      const daySessions = sessions.filter((s) => {
+        const sessionDate = new Date(s.completedAt).toISOString().split("T")[0];
+        return sessionDate === dateStr;
+      });
       days.push({
         label: dayLabel,
         completed: daySessions.filter((s) => s.status === "completed").length,
@@ -72,10 +75,11 @@ export default function Dashboard() {
   const maxDayActivity = Math.max(1, ...weekActivity.map((d) => d.completed + d.failed));
 
   // Total study time
+  // Total study time
   const totalMinutes = useMemo(() => {
     return sessions
       .filter((s) => s.status === "completed")
-      .reduce((sum, s) => sum + s.duration, 0);
+      .reduce((sum, s) => sum + (s.duration || 0), 0);
   }, [sessions]);
 
   const hours = Math.floor(totalMinutes / 60);

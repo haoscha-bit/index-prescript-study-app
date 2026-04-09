@@ -24,7 +24,7 @@ export default function History() {
   const groupedSessions = useMemo(() => {
     const groups: Record<string, typeof sessions> = {};
     for (const s of filteredSessions) {
-      const date = new Date(s.timestamp).toLocaleDateString("en-GB", {
+      const date = new Date(s.completedAt).toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -106,7 +106,7 @@ export default function History() {
               <div className="space-y-2">
                 <AnimatePresence>
                   {daySessions.map((session, i) => {
-                    const time = new Date(session.timestamp).toLocaleTimeString("en-GB", {
+                    const time = new Date(session.completedAt).toLocaleTimeString("en-GB", {
                       hour: "2-digit",
                       minute: "2-digit",
                     });

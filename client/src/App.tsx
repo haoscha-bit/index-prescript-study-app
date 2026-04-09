@@ -5,14 +5,17 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PrescriptProvider } from "./contexts/PrescriptContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import Home from "./pages/Home";
 import CreatePrescript from "./pages/CreatePrescript";
 import ReceivePrescript from "./pages/ReceivePrescript";
 import FocusTimer from "./pages/FocusTimer";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
-function Router() {
+function AuthenticatedRouter() {
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -27,27 +30,44 @@ function Router() {
   );
 }
 
+function UnauthenticatedRouter() {
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/404" component={NotFound} />
+      <Route component={Login} />
+    </Switch>
+  );
+}
+
 function App() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <PrescriptProvider>
-            <Toaster
-              toastOptions={{
-                style: {
-                  background: "oklch(0.16 0.012 270)",
-                  border: "1px solid oklch(0.72 0.12 75 / 0.3)",
-                  color: "oklch(0.88 0.005 80)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                },
-              }}
-            />
-            <Router />
-          </PrescriptProvider>
+          <Toaster
+            toastOptions={{
+              style: {
+                background: "oklch(0.16 0.012 270)",
+                border: "1px solid oklch(0.72 0.12 75 / 0.3)",
+                color: "oklch(0.88 0.005 80)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.75rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+              },
+            }}
+          />
+          {isAuthenticated ? (
+            <PrescriptProvider>
+              <AuthenticatedRouter />
+            </PrescriptProvider>
+          ) : (
+            <UnauthenticatedRouter />
+          )}
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

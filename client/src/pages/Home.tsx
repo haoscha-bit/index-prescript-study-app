@@ -2,6 +2,7 @@
  * Home.tsx — The Sanctum (Main Chamber)
  * Design: Clean dark layout with Index logo and blue accents
  */
+import { useAuth } from "@/_core/hooks/useAuth";
 import Layout from "@/components/Layout";
 import DocumentCard from "@/components/DocumentCard";
 import { usePrescript } from "@/contexts/PrescriptContext";
@@ -9,9 +10,13 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { FilePlus, Timer, BarChart3, Archive, ChevronRight } from "lucide-react";
 
-const INDEX_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/The_Index_Logo_ddd3662b.webp";
+const INDEX_LOGO = "/assets/The_Index_Logo.webp";
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  const { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const { prescripts, totalCompleted, streak, rank, getCompletionRate, activePrescript } = usePrescript();
 
   return (

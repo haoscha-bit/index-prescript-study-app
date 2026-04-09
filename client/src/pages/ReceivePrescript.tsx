@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { ChevronRight, Clock, Tag, AlertTriangle, RefreshCw } from "lucide-react";
 import { usePrescriptAudio } from "@/hooks/usePrescriptAudio";
 
-const INDEX_LOGO_GLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663528861189/RhtPG9LggTLTG7ANMWXNdF/The_Index_Logo_ddd3662b.webp";
+const INDEX_LOGO_GLOW = "/assets/The_Index_Logo.webp";
 
 const SCRAMBLE_CHARS = "0123456789!█▒░ABCDEF";
 const BLOCK_CHAR = "█";
@@ -266,9 +266,8 @@ export default function ReceivePrescript() {
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-sm">
-                      <AlertTriangle size={14} className={difficultyColor(assignedPrescript.difficulty)} />
-                      <span className={difficultyColor(assignedPrescript.difficulty)}>
-                        {(assignedPrescript.difficulty || "standard").toUpperCase()}
+                      <span className="text-index-blue">
+                        {assignedPrescript.duration} MIN
                       </span>
                     </div>
                   </div>
